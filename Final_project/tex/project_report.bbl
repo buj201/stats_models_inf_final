@@ -1,0 +1,20 @@
+\begin{thebibliography}{1}
+
+\bibitem{Hedges}
+Michael Borenstein, Larry~V. Hedges, Julian P.~T. Higgins, and Hannah~R.
+  Rothstein.
+\newblock {\em Introduction to Meta-Analysis}.
+\newblock John Wiley \& Sons, Ltd, 2009.
+
+\bibitem{Original}
+J.P. Higgins and D.J. Spiegelhalter.
+\newblock Being sceptical about meta-analyses: a bayesian perspective on
+  magnesium trials in myocardial infarction.
+\newblock {\em Int J Epidemiol.}, 31(1):96--104, 2002.
+
+\bibitem{Methods}
+Guido Schwarzer, James~R. Carpetner, and Gerta R{\"u}cker.
+\newblock {\em Meta-Analysis with R}.
+\newblock Springer International Publishing, 2015.
+
+\end{thebibliography}

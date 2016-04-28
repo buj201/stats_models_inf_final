@@ -1,0 +1,213 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Stylish Article
+% LaTeX Template
+% Version 2.1 (1/10/15)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Mathias Legrand (legrand.mathias@gmail.com) 
+% With extensive modifications by:
+% Vel (vel@latextemplates.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[fleqn,10pt]{SelfArx} % Document font size and equations flushed left
+
+\usepackage[english]{babel} % Specify a different language here - english by default
+
+\usepackage{lipsum} % Required to insert dummy text. To be removed otherwise
+
+\usepackage{booktabs} %stretch tables
+%----------------------------------------------------------------------------------------
+%	COLUMNS
+%----------------------------------------------------------------------------------------
+
+\setlength{\columnsep}{0.55cm} % Distance between the two columns of text
+\setlength{\fboxrule}{0.75pt} % Width of the border around the abstract
+
+%----------------------------------------------------------------------------------------
+%	COLORS
+%----------------------------------------------------------------------------------------
+
+\definecolor{color1}{RGB}{0,0,90} % Color of the article title and sections
+\definecolor{color2}{RGB}{0,20,20} % Color of the boxes behind the abstract and headings
+
+%----------------------------------------------------------------------------------------
+%	HYPERLINKS
+%----------------------------------------------------------------------------------------
+
+\usepackage{hyperref} % Required for hyperlinks
+\hypersetup{hidelinks,colorlinks,breaklinks=true,urlcolor=color2,citecolor=color1,linkcolor=color1,bookmarksopen=false,pdftitle={Title},pdfauthor={Author}}
+
+%----------------------------------------------------------------------------------------
+%	ARTICLE INFORMATION
+%----------------------------------------------------------------------------------------
+
+\JournalInfo{Applied Statistical Modeling and Inference} % Journal information
+\Archive{\today} % Additional notes (e.g. copyright, DOI, review/research article)
+
+\PaperTitle{Final Project} % Article title
+
+\Authors{Benjamin Jakubowski } % Authors
+
+\Keywords{} % Keywords - if you don't want any simply remove all the text between the curly brackets
+\newcommand{\keywordname}{Keywords} % Defines the keywords heading name
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT
+%----------------------------------------------------------------------------------------
+
+\Abstract{In 2002, Higgins and Spiegelhalter published a report comparing different meta-analyses of clinical trials testing the benefits of intravenous magnesium (Mg) following myocardial infarction (MI). This report essentially replicates their work using open-source statistical tools (R and RSTAN). First, we briefly introduce frequentist and Bayesian methods for meta-analysis and frame the substantive problem (meta-analytic inference on the log odds ratio for mortality with and without intravenous Mg following MI). Then we introduce and conduct the two frequentist analyses (using the Peto method and DerSimonian and Laird (D-L) method). Next, we run two Bayesian random effects models under two different priors. Finally, we compare the results from these different methods, and conclude by addressing the substantive question of the efficacy of Mg.}
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\flushbottom % Makes all text pages the same height
+
+\maketitle % Print the title and abstract box
+
+\tableofcontents % Print the contents section
+
+\thispagestyle{empty} % Removes page numbering from the first page
+
+%----------------------------------------------------------------------------------------
+%	ARTICLE CONTENTS
+%----------------------------------------------------------------------------------------
+
+\section{Introduction} % The \section*{} command stops section numbering
+
+\subsection*{Introducing meta-analysis}
+
+Meta-analysis is an important method for statistical inference motivated primarily by the need to combine the results of replication studies. For example, early clinical development requires investigating the efficacy of a candidate therapy on small numbers of patients. If early results are promising, the clinical trial may be replicated, and if there is continued evidence of clinically beneficial effect a large study may eventually be conducted. 
+
+Since a single candidate therapy (or, more generally, a single statistical relationship) may be tested many times over many studies, there is a need for statistical methods to combine results across disparate studies. For example, in a clinical context there is a need to estimate the overall effect size of a new therapy. A naive approach to estimating the overall effect size would be to take a simple mean of effect sizes from each study; however, this would clearly ignore information about the studies (for example, their sample sizes). The statistical field of meta-analysis involves (among other lines of inquiry) developing more principled methods for estimating the overall effect size from multiple studies.
+
+When conducting a meta-analysis, it is important to consider many factors, including
+\begin{itemize}
+\item \textbf{Number of trials included}: It is important to consider the number of trials included in the meta-analysis because we may want to estimate the between-study effect size distribution (using a random-effects model). With an insufficient number of studies, our estimate will be poor \cite{Hedges}.
+\item \textbf{Trial inclusion criteria (including trial quality)}: It is important to consider which trials to include in a meta-analysis. The goal of meta-analysis is to pool effect size estimates from comparable studies; as such, it is important the included studies are in fact comparable \cite{Hedges}. Additionally, it is important to consider their quality. Including poorly run trials (with potentially biased results) will bias the final meta-analytic result. To risk statistical tautology, meta-analysis does not produce meaningful results from meaningless studies.
+\item \textbf{The sample sizes of the trials}: Studies with larger sample sizes are expected to have smaller variance in effect size estimates, and should be more heavily weighted in the final meta-analytic estimate.
+\item \textbf{Publication bias}: Unfortunately, our current system of scientific publication (typically) suppresses results that don't pass an $\alpha = 0.05$ test. This is expected to bias the sample of trials available for meta-analysis towards trials with larger observed effect sizes (since they are more likely to be published)\cite{Hedges}. While there are methods to assess publication bias in a sample of studies (for example, funnel plots comparing estimated effect sizes vs. sample size or standard error) the suspicion of bias plagues meta-analysis \cite{Original}. 
+\end{itemize}
+
+\subsection*{Bayesian vs. Frequentist Analysis}
+
+There are two fundamental views of statistics. The first is frequentist statistics. In a frequentist view, parameters are fixed and unknown. In the context of our analysis, under the frequentist view there is a true log odds ratio ($\theta$) for mortality with and without intravenous Mg following MI for our given population. We can sample from the population and estimate this parameter as $\hat{\theta}$, but we can never access the true value $\theta$. Note our estimate $\hat{\theta}$ is drawn from the sampling distribution of this statistic, and as such is random (due to sampling error), but the underlying parameter itself is non-random.
+
+In contrast, in the Bayesian view the parameter is itself a random variable- there is no fixed "true" value $\theta$. Instead, $\theta$ is a random variable that has some distribution we can estimate. Our initial estimate (the 'prior' distribution) for this distribution is P$(\theta)$. After seeing data $\mathcal{D}$, we can place an updated 'posterior' distribution on $\theta$, namely P$(\theta | \mathcal{D})$ \footnote{For the sake of notation, I'm using P to represent either a density function or probability mass function}.
+
+The problem of meta-analysis lends itself well to the Bayesian paradigm, since random-effects meta-analysis essentially matches the Bayesian perspective that there is in fact an underlying distribution on $\theta$. In a random-effects model, we no longer view $\theta$ as a fixed parameter- instead there is an underlying distribution on $\theta$ (which can be attributed to heterogeneity between studies). For further context, there are essentially two steps in data generating process governing this model \cite{Hedges}:
+\begin{enumerate}
+\item \textbf{Draw $\theta^i$ from the distribution on $\theta$}: Consider the $i^{th}$ study- choosing this study corresponds to drawing some effect size $\theta^i$ from the distribution on $\theta$.
+\item \textbf{Draw from the sampling distribution of $\hat{\theta}^i$}: Next, we estimate $\theta^i$ with our test statistic $\hat{\theta}^i$. This statistic is itself drawn from a sampling distribution, and as such is a random variable.
+\end{enumerate}
+Under this model, it is very natural to take a Bayesian perspective, placing a prior distribution on $\theta$ and then updating our prior based on available data (trial results).
+
+\subsection*{Meta-analysis in practice: treating MI with Mg}
+
+In this report, we will apply both frequentist and Bayesian meta-analysis methods to the problem of estimating the efficacy of intravenous magnesium in patients with acute myocardial infarction. This treatment was controversial in the 1990s due to the apparent contradiction between early meta-analyses and a later mega-trial. Higgins and Spiegelhalter \cite{Original} present the following timeline:
+\begin{enumerate}
+\item \textbf{First eight trials}: Fixed effect and random effects meta-analysis of eight early trials produced ORs of 0.65 (95\% CI: 0.51, 0.82) and 0.55 (95\% CI: 0.34, 0.89).
+\item \textbf{First 14 trials}: Fixed effect and random effects meta-analysis of 14 early trials produced ORs of 0.57 (95\% CI: 0.46, 0.71) and 0.47 (95\% CI: 0.33, 0.68).
+\item \textbf{Including ISIS-4 mega-trial}: Finally, including the results of the ISIS-4 mega-trial (published in 1995), meta-analysis produces fixed effect and random effects ORs of 1.01 (95\% CI: 0.95, 1.07) and 0.53 (95\% CI: 0.36, 0.77).
+\end{enumerate}
+Thus, it is apparent the ISIS-4 mega-trial conflicted with the promising early meta-analyses. This conflict lead to both methodological and clinical controversy around the use meta-analysis and Mg for MI, respectively. We proceed by exploring this controversial dataset using both frequentist and Bayesian meta-analysis. 
+%------------------------------------------------
+
+\section{Introducing the models}
+
+Our analysis is divided into two sections. In the first analysis section (section 3), we will present two frequentist meta-analyses: a fixed-effects model using the Peto method, and a random-effects model using the DerSimonian and Laird (D-L) method. In the second analysis section (section 4), we will present two Bayesian random-effects models, corresponding to two priors: a reference prior and a skeptical prior. Before conducting these analyses, we first introduce these models.
+
+\subsection*{Fixed- vs. random-effects models and sample sizes}
+
+As described above, there are two essential modeling frameworks for meta-analysis \cite{Hedges}:
+\begin{enumerate}
+\item \textbf{Fixed-effects models}: In a fixed-effects model, we assume there is a constant true effect size that is the same for all studies. Note this is a strong assumption, since it is asserts the homogeneity of studies potentially conducted (i) at different locations, (ii) on samples (in our context patient samples) with differing characteristics, (iii) using different protocols (ex: varying times of treatment administration). Under this assumption, variation in the estimated effect size is attributed to sampling error.
+\item \textbf{Random-effects models}: In a random-effects model, we assume the true effect size varies between studies. Note this is a weaker assumption, since it is allows for heterogeneity between the studies' true effect sizes.
+\end{enumerate}
+
+Importantly, the impact of a trial's sample size on its weight in the estimated meta-analytic treatment effect varies between fixed-effects and random-effects models. In a fixed-effects models, since we assume there is a constant true effect size $\theta$, larger studies provide lower-variance estimates than smaller studies. As such, fixed-effects model estimates will be dominated by large studies (if the trial sample sizes are highly variable).
+
+In contrast, in a random-effects model, each study represents a single draw $\theta^i$ from the underlying distribution on $\theta$. As such, while the studies with larger sample sizes will have lower variance estimates $\hat{\theta}^i$ of $\theta^i$, each study still provides useful information on the underlying distribution of $\theta$. Hence, larger studies receive a (relatively) less-outsized weight in the meta-analytic treatment effect estimate, and smaller studies recieve a (relative) greater weight (compared to fixed-effect models).
+
+We proceed to specify the frequentist fixed-effect and random-effects models used in our analysis. Note the subsequent sections draw heavily from Schwarzer \emph{et al.} \cite{Methods}
+
+\subsection*{Frequentist fixed-effect models: Peto method}
+
+\bgroup
+\def\arraystretch{1.2}
+\begin{table}
+\caption{Data produced by study $i$} \label{tab:sld}
+\begin{center}
+\begin{tabular}{| c | c | c | c |}
+\hline
+	& Deaths & No Death & Group size \\
+\hline
+Magnesium group &  $r_i^M$ & $q_i^M$ & $n_i^M = r_i^M + q_i^M$\\
+\hline
+Control group &  $r_i^C$ & $q_i^C$ & $n_i^C = r_i^C + q_i^C$  \\
+\hline
+Marginal counts & $r_i^M + r_i^C$ & $q_i^M + q_i^C$ & $n_i^M + n_i^C$ \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+\egroup
+
+The Peto method is a method for fixed-effect modeling of binary data. The $i^{th}$ trial in our meta-analysis produces the data described in Table \ref{tab:sld}. The number of deaths are assumed to follow a binomial distributions: $r_i^M \sim \textrm{Binomial}(n_i^M, p_i^M)$ and $r_i^C \sim \textrm{Binomial}(n_i^C, p_i^C)$. Note under a fixed-effect model, $p_i^M = p_j^M$ and $p_i^C = p_j^C$ for all $i, j$.
+
+Each trial produces estimates $\hat{p}_i^M = r_i^M/n_i^M$ and $\hat{p}_i^C = r_i^C / n_i^C$. In addition, we can estimate the odds ratio $\psi = \frac{p^M (1- p^M)}{p^C (1 - p^C)}$ using the $i^{th}$ study:
+\[\hat{\psi}_i = \frac{\hat{p}_i^M(1-\hat{p}_i^M)}{\hat{p}_i^C(1-\hat{p}_i^C)}\]
+Unfortunately, this estimator fails when we have 0 counts for either deaths in the treatment or control group (as we do in our meta-analysis for the Bertschat trial). One approach to dealing with this issue is to add a continuity correction. However, we will instead use the Peto method, which does not required any such correction. The Peto estimate of the odds ratio is
+\[\hat{\psi}_i^* = \exp\left(\frac{r_i^M - \textrm{E}(r_i^K | \cdots; \psi = 1)}{\textrm{Var}(r_i^K | \cdots; \psi = 1)}\right)\]
+where "$\cdots$" refers to the group sizes and marginal counts from Table \ref{tab:sld}, and the expectation and variance are over a hypergeometric distribution (found under the assumption the true odds ratio $\psi = 1$).
+
+Per usual, we take the log transform of this odds ratio log$(\hat{\psi}_i^*)$. The variance of this transformed statistic is
+\[\hat{\textrm{Var}}(\log \hat{\psi}_i^*)) = \frac{1}{\textrm{Var}(r_i^K | \cdots; \psi = 1)}\]
+With the Peto estimate of the odds ratio in hand, we now turn to the Peto method for meta-analysis. The Pet method is essentially an inverse variance method, where the log of the final meta-analytic Peto odds ratio. $\log(\hat{\psi}_{Peto})$ is a weighted average (convex combination) of the log-scaled Peto-estimated odds ratios:
+\[\log(\hat{\psi}_{Peto}) = \frac{1}{\sum_{i = 1}^K w_k } \sum_{i = 1}^K w_k \log \hat{\psi}_k^* \]
+where $w_i = \frac{1}{\hat{\textrm{Var}}(\log \hat{\psi}_i^*)}$.
+
+The variance of the Peto-estimated log odds ratio is
+\[\hat{\textrm{Var}} (\log \hat{\psi}_{Peto}) = \frac{1}{{1}/{\sum_{i = 1}^K \hat{\textrm{Var}}( \log \hat{\psi}_k^*)}}\]
+
+From this point estimate and estimated variance, we can easily derive confidence interval and conduct statistic tests. 
+
+\subsection*{Frequentist random-effects models: D-L method}
+
+
+
+%------------------------------------------------
+
+\section{Frequentist analysis}
+
+
+
+%------------------------------------------------
+
+\section{Bayesian analysis}
+
+%------------------------------------------------
+
+\section{Conclusion}
+
+%----------------------------------------------------------------------------------------
+%	REFERENCE LIST
+%----------------------------------------------------------------------------------------
+
+\bibliographystyle{unsrt}
+\bibliography{sample}
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
