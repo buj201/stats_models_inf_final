@@ -1,0 +1,98 @@
+setwd("~/Desktop/MS_Courses/Stats_inf_regression/stats_models_inf_final/Final_project")
+
+MgMI = read.csv('data/magnesium.csv', )
+
+early_studies = c('Morton','Rasmussen','Smith','Abraham','Feldstedt','Schechter','Ceremuzynski','LIMIT-2')
+
+middle_studies = c('Bertschat','Singh','Pereira','Golf','Thogersen','Schechter 2')
+
+late_study = c('ISIS-4')
+
+###Peto analysis function:
+
+library('metafor')
+
+peto_analysis = function(list_of_studies, MgMI_data){
+  target_data = MgMI_data[MgMI_data$trialnam %in% list_of_studies,]
+  ai = target_data$dead1
+  bi = target_data$tot1 - target_data$dead1
+  n1i = target_data$tot1
+  ci = target_data$dead0
+  di = target_data$tot0 - target_data$dead0
+  n2i = target_data$tot0
+  return(rma.peto(ai,bi,ci,di,n1i,n2i, 1, to='none'))
+}
+
+###DL analysis function
+
+library(rmeta)
+
+DL_analysis = function(list_of_studies, MgMI_data){
+  target_data = MgMI_data[MgMI_data$trialnam %in% list_of_studies,]
+  ptrt = target_data$dead1
+  ntrt = target_data$tot1
+  pctrl = target_data$dead0
+  nctrl = target_data$tot0
+  statistic = 'OR'
+  return(meta.DSL(ntrt, nctrl, ptrt, pctrl, conf.level=0.95, statistic))
+}
+
+make_peto_string = function(list_of_studies, MgMI_data){
+  peto_results = peto_analysis(list_of_studies, MgMI_data)
+  k = peto_results$k
+  OR = exp(peto_results$b)
+  LB = exp(peto_results$ci.lb)
+  UB = exp(peto_results$ci.ub)
+  table_string = sprintf("\\multicolumn{5}{l}{Fixed effect (Peto) meta-analysis of above %i trials: OR = %.2f (95 ", k, OR)
+  table_string = paste(table_string, "\\% CI: ", sep = "")
+  end_string = sprintf("%.2f, %.2f) %s",LB, UB, "} \\\\ \n")
+  table_string = paste(table_string, end_string, sep = "")
+  return(table_string)
+}
+
+
+make_DL_string = function(list_of_studies, MgMI_data){
+  DL_results = DL_analysis(list_of_studies, MgMI_data)
+  k = length(DL_results$logs)
+  OR = exp(DL_results$logDSL)
+  LB = exp(DL_results$logDSL - 1.96*DL_results$selogDSL)
+  UB = exp(DL_results$logDSL + 1.96*DL_results$selogDSL)
+  table_string = sprintf("\\multicolumn{5}{l}{Random effects (D-L) meta-analysis of above %i trials: OR = %.2f (95 ", k, OR)
+  table_string = paste(table_string, "\\% CI: ", sep = "")
+  end_string = sprintf("%.2f, %.2f) %s",LB, UB, "} \\\\ \n")
+  table_string = paste(table_string, end_string, sep = "")
+  return(table_string)
+}
+
+writeLines(make_peto_string(early_studies, MgMI))
+
+###Make table
+
+firstdf = MgMI[match(early_studies, MgMI$trialnam),c('trialnam','dead1','tot1','dead0','tot0')]
+names(firstdf) = c('Trial', 'Deaths $r_i^M$', 'Patients $n_i^M$', 'Deaths $r_i^C$', 'Patients $n_i^C$')
+seconddf = MgMI[match(middle_studies, MgMI$trialnam),c('trialnam','dead1','tot1','dead0','tot0')]
+thirddf = MgMI[match(late_study, MgMI$trialnam),c('trialnam','dead1','tot1','dead0','tot0')]
+
+library(xtable)
+
+text_identity = function(x){
+  return(x)
+}
+
+table = print(xtable(firstdf), include.rownames = FALSE, comment=FALSE, sanitize.text.function = text_identity, table.placement = 'b')
+table = gsub("\\end{tabular}\n\\end{table}\n","",table,  fixed = TRUE)
+table = paste(table, make_peto_string(early_studies, MgMI))
+table = paste(table, make_DL_string(early_studies, MgMI))
+table = paste(table, print(xtable(seconddf), include.colnames = FALSE, include.rownames = FALSE, only.contents = TRUE, comment=FALSE))
+table = paste(table,make_peto_string(c(early_studies, middle_studies), MgMI))
+table = paste(table,make_DL_string(c(early_studies, middle_studies), MgMI))
+table = paste(table, print(xtable(thirddf), include.colnames = FALSE, include.rownames = FALSE, only.contents = TRUE, comment=FALSE))
+table = paste(table,make_peto_string(c(early_studies, middle_studies, late_study), MgMI))
+table = paste(table,make_DL_string(c(early_studies, middle_studies, late_study), MgMI))
+table = paste(table,"\\end{tabular}\n\\caption{Reproducing Table 2 from Higgens and Spiegelhalter}\n\\label{tab:Table2}\n\\end{table}\n")
+table = gsub("table","table*", table)
+
+fileConn = file("tex/table2.tex")
+writeLines(table, fileConn)
+close(fileConn)
+
