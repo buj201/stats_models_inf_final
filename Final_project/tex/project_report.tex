@@ -166,24 +166,56 @@ Marginal counts & $r_i^M + r_i^C$ & $q_i^M + q_i^C$ & $n_i^M + n_i^C$ \\
 
 The Peto method is a method for fixed-effect modeling of binary data. The $i^{th}$ trial in our meta-analysis produces the data described in Table \ref{tab:sld}. The number of deaths are assumed to follow a binomial distributions: $r_i^M \sim \textrm{Binomial}(n_i^M, p_i^M)$ and $r_i^C \sim \textrm{Binomial}(n_i^C, p_i^C)$. Note under a fixed-effect model, $p_i^M = p_j^M$ and $p_i^C = p_j^C$ for all $i, j$.
 
-Each trial produces estimates $\hat{p}_i^M = r_i^M/n_i^M$ and $\hat{p}_i^C = r_i^C / n_i^C$. In addition, we can estimate the odds ratio $\psi = \frac{p^M (1- p^M)}{p^C (1 - p^C)}$ using the $i^{th}$ study:
+Each trial produces estimates
+\[\hat{p}_i^M = r_i^M/n_i^M\]
+\[\hat{p}_i^C = r_i^C / n_i^C\]
+In addition, we can estimate the odds ratio $\psi = \frac{p^M (1- p^M)}{p^C (1 - p^C)}$ using the $i^{th}$ study:
 \[\hat{\psi}_i = \frac{\hat{p}_i^M(1-\hat{p}_i^M)}{\hat{p}_i^C(1-\hat{p}_i^C)}\]
-Unfortunately, this estimator fails when we have 0 counts for either deaths in the treatment or control group (as we do in our meta-analysis for the Bertschat trial). One approach to dealing with this issue is to add a continuity correction. However, we will instead use the Peto method, which does not required any such correction. The Peto estimate of the odds ratio is
+Unfortunately, this estimator fails when we have 0 counts for either deaths in the treatment or control group (as we do in our meta-analysis for the Bertschat trial). One approach to dealing with this issue is to add a continuity correction. Alternatively, we can instead use the Peto method, which does not required any such correction. The Peto estimate of the odds ratio is
 \[\hat{\psi}_i^* = \exp\left(\frac{r_i^M - \textrm{E}(r_i^K | \cdots; \psi = 1)}{\textrm{Var}(r_i^K | \cdots; \psi = 1)}\right)\]
-where "$\cdots$" refers to the group sizes and marginal counts from Table \ref{tab:sld}, and the expectation and variance are over a hypergeometric distribution (found under the assumption the true odds ratio $\psi = 1$).
+where ``$\cdots$" refers to the group sizes and marginal counts from Table \ref{tab:sld}, and the expectation and variance are over a hypergeometric distribution (using the assumption the true odds ratio $\psi = 1$).
 
 Per usual, we take the log transform of this odds ratio log$(\hat{\psi}_i^*)$. The variance of this transformed statistic is
-\[\hat{\textrm{Var}}(\log \hat{\psi}_i^*)) = \frac{1}{\textrm{Var}(r_i^K | \cdots; \psi = 1)}\]
-With the Peto estimate of the odds ratio in hand, we now turn to the Peto method for meta-analysis. The Pet method is essentially an inverse variance method, where the log of the final meta-analytic Peto odds ratio. $\log(\hat{\psi}_{Peto})$ is a weighted average (convex combination) of the log-scaled Peto-estimated odds ratios:
-\[\log(\hat{\psi}_{Peto}) = \frac{1}{\sum_{i = 1}^K w_k } \sum_{i = 1}^K w_k \log \hat{\psi}_k^* \]
-where $w_i = \frac{1}{\hat{\textrm{Var}}(\log \hat{\psi}_i^*)}$.
+\[\widehat{\textrm{Var}}(\log \hat{\psi}_i^*)) = \frac{1}{\textrm{Var}(r_i^K | \cdots; \psi = 1)}\]
+With the Peto estimate of the odds ratio in hand, we now turn to the Peto method for meta-analysis. The Pet method is essentially an inverse variance method, where the log of the final meta-analytic Peto odds ratio $\log(\hat{\psi}_{Peto})$ is a weighted average (convex combination) of the log-scaled Peto-estimated odds ratios:
+\[\log(\hat{\psi}_{Peto}) = \frac{\sum_{i = 1}^K w_i \log \hat{\psi}_i^*}{\sum_{i = 1}^K w_i} \]
+where
+\[w_i = \frac{1}{\widehat{\textrm{Var}}(\log \hat{\psi}_i^*)}\].
 
 The variance of the Peto-estimated log odds ratio is
-\[\hat{\textrm{Var}} (\log \hat{\psi}_{Peto}) = \frac{1}{{1}/{\sum_{i = 1}^K \hat{\textrm{Var}}( \log \hat{\psi}_k^*)}}\]
+\[\widehat{\textrm{Var}} (\log \hat{\psi}_{Peto}) = \frac{1}{{1}/{\sum_{i = 1}^K \widehat{\textrm{Var}}( \log \hat{\psi}_i^*)}}\]
 
 From this point estimate and estimated variance, we can easily derive confidence interval and conduct statistic tests. 
 
 \subsection*{Frequentist random-effects models: D-L method}
+
+Next, we introduce the DerSimonian-Laird method for random-effects modeling, following the treatment by Brockwell and Gordon \ref{BG}. First, recall under the general random-effects model the measured effect size $\theta_i$ for the $i^{th}$ trial in a collection of $K$ studies is:
+\[\theta_i  = \theta + \epsilon_i + e_i\]
+where $e_i \sim N(0, \sigma_i^2)$ and $\epsilon_i \sim N(0, \tau^2)$ (i.e. $e_i$ is random sampling error and $\theta + \epsilon_i$ is trial $i$'s true effect size). Note we have yet to define the specific effect size measure- we will present the D-L method in the abstract, then return to this question. 
+
+Similarly to the fixed-effect model, we use a weighted average to estimate $\theta$, setting
+\[\hat{\theta}_\tau =  \frac{\sum_{i = 1}^K \hat{w}_i(\tau) Y_i }{\sum_{i = 1}^K \hat{w}_i(\tau)}\]
+with variance
+\[\textrm{Var}(\hat{\theta}_\tau) = \frac{1}{\sum\hat{w}_i(\tau)}\]
+
+where $\hat{w}_i(\tau) = [\tau^2 + \hat{w}_i^{-1}]^{-1}$ and $\hat{w}_i$ is the estimated inverse variance of the $i^{th}$ studies effect size.
+
+The challenge in random effects modeling is estimating the between-study variance $\tau^2$. A common approach is the DerSimonian and Laird method, which is a method of moments based estimator defined as 
+\[t = \frac{q_{\hat{w}} - (K - 1)}{\sum \hat{w}_i - \sum \hat{w}_i^2/ \sum \hat{w}_i}\]
+Here, the only new term is $q_{\hat{w}}$, which is the observed value of Cochran's Q heterogeneity statistic\footnote{Note this is what makes D-L a method of moments based estimator, as we are plugging in the observed value of this statistic for its expectation in our estimator for $\tau^2$.}\cite{HTDA}:
+\[q_{\hat{w}} = \sum_{i = 1}^K w_i (\hat{\theta}_i - \bar{\theta}_{weighted})^2\]
+Since $t$ can be negative, we define our final estimator as
+\[\hat{\tau}^2 = \max \{0, t\}\]
+
+Finally, having computed this estimate for $\tau^2$, we plug it into our weights, our estimator for $\theta$, and its variance estimate:
+\[\hat{w}_i({\hat{\tau}}) = [\hat{\tau}^2 + \hat{w}_i^{-1}]^{-1}\]
+\[\hat{\theta}_{\hat{\tau}} =  \frac{\sum_{i = 1}^K \hat{w}_i(\hat{\tau}) Y_i }{\sum_{i = 1}^K \hat{w}_i(\hat{\tau})}\]
+\[\textrm{Var}(\hat{\theta}_{\hat{\tau}}) = \frac{1}{\sum\hat{w}_i(\hat{\tau})}\]
+
+Now all that is left is returning to the effect size estimator $\hat{\theta}_i$. For example, we can the Peto method described above, and doing so fixes our definition of $\theta_i, \bar{\theta_i}$, and $w_i$\cite{Methods}:
+\[\hat{\theta}_i = \log (\hat{\psi_i}^*)\]
+\[\bar{\theta}_{weighted} = \log(\hat{\psi}_{Peto})\]
+\[w_i = \frac{1}{\widehat{\textrm{Var}}(\log \hat{\psi}_i^*)}\]
 
 
 
