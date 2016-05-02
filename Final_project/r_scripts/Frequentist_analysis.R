@@ -196,7 +196,7 @@ real<lower=0> tau;         // SD of effect size distribution
 
 model { 
 //place priors
-deltanew ~ normal(0, 0.03);   // skeptical prior on deltanew with sd = 0.03
+deltanew ~ normal(0, sqrt(0.03));   // skeptical prior on deltanew with var = 0.03
 tau ~ uniform(0,100); // reference prior on tau with sd = 100
 
 //Modeling the data generating process
@@ -210,7 +210,7 @@ library(ggplot2)
 fit_skeptical_prior = stan(model_code = skeptical_prior, data = c("K", "rm", "nm",'rc','nc'), pars = c("deltanew"), iter = 500000, chains = 3)
 skeptical_prior_return_vals <- extract(fit_skeptical_prior, permuted=TRUE)
 png(filename="./figures/skeptical_hist.png")
-hist(exp(skeptical_prior_return_vals$deltanew), breaks=50, xlab = expression(delta[new]), main=expression("Distribution of" ~ delta[new] ~ "under skeptical prior"))
+hist(exp(skeptical_prior_return_vals$deltanew), breaks=100, xlim =c(0,1.4), xlab = expression(exp(delta[new])), main=expression("Distribution of" ~ exp(delta[new]) ~ "under skeptical prior"))
 dev.off()
 png(filename="./figures/skeptical_trace.png")
 traceplot(fit_skeptical_prior, pars= "deltanew") + labs(y = expression(delta[new]), title = expression("Trace plot for" ~ delta[new] ~ "under skeptical prior"))
@@ -220,8 +220,38 @@ dev.off()
 fit_reference_prior = stan(model_code = reference_prior, data = c("K", "rm", "nm",'rc','nc'), pars = c("deltanew"), iter = 500000, chains = 3)
 reference_prior_return_vals <- extract (fit_reference_prior, permuted=TRUE)
 png(filename="./figures/reference_hist.png")
-hist(exp(reference_prior_return_vals$deltanew), breaks=100, xlim =c(0,1.2),xlab = expression(delta[new]), main=expression("Distribution of" ~ delta[new] ~ "under reference prior"))
+hist(exp(reference_prior_return_vals$deltanew), breaks=100, xlim =c(0,1.4),xlab = expression(exp(delta[new])), main=expression("Distribution of" ~ exp(delta[new]) ~ "under reference prior"))
 dev.off()
 png(filename="./figures/reference_trace.png")
 traceplot(fit_reference_prior, pars= "deltanew") + labs(y = expression(delta[new]), title = expression("Trace plot for" ~ delta[new] ~ "under reference prior"))
 dev.off()
+
+##Get point estimate and CI for delta_new
+
+summary_reference = summary(fit_reference_prior, digits = 3)
+summary_skeptical = summary(fit_skeptical_prior, digits = 3)
+
+get_ci = function(summary_from_stan){
+  point_est = exp(summary_from_stan$summary['deltanew','mean'])
+  lb_ci = exp(summary_from_stan$summary['deltanew','2.5%'])
+  ub_ci = exp(summary_from_stan$summary['deltanew','97.5%'])
+  return(c('Posterior mean $\\exp(\\delta_{new})$' = point_est,'Lower bound (95% CI)'=lb_ci,'Upper bound (95% CI)'=ub_ci))
+}
+summary_table = as.data.frame(list('Reference' = get_ci(summary_reference),'Skeptical' =get_ci(summary_skeptical)))
+summary_table = print(xtable(summary_table, caption='Posterior distribution mean and 95\\% confidence interval',label='tab:sum_post_dist'), include.rownames = TRUE, comment=FALSE, sanitize.text.function = text_identity, table.placement = 'htbp')
+fileConn = file("tex/table3.tex")
+writeLines(summary_table, fileConn)
+close(fileConn)
+
+get_clinical_stats_sig = function(stan_return_vals){
+  num_iters = length(stan_return_vals$deltanew)
+  tot_stats_sig = sum(stan_return_vals$deltanew > 0)
+  tot_clin_sig = sum(stan_return_vals$deltanew > log(0.9))
+  return(c('P($\\exp(\\delta_{new}) < 1$)'= tot_stats_sig/num_iters, 'P($\\exp(\\delta_{new}) < 0.9$)'= tot_clin_sig/num_iters))
+}
+
+summary_table = as.data.frame(list('Reference' = get_clinical_stats_sig(reference_prior_return_vals),'Skeptical' =get_clinical_stats_sig(skeptical_prior_return_vals)))
+summary_table = print(xtable(summary_table, caption='Probabilities of clinical and statistical significance under priors',label='tab:prob_sigs', digits=4), include.rownames = TRUE, comment=FALSE, sanitize.text.function = text_identity, table.placement = 'htbp')
+fileConn = file("tex/table4.tex")
+writeLines(summary_table, fileConn)
+close(fileConn)
