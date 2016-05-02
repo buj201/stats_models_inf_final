@@ -204,11 +204,24 @@ delta ~ normal(deltanew, tau);     //draw true effect size for each trial (impli
 y ~ normal(delta, w);        //draw a measured effect size with noise
 }"
 
-# Just to check
-fit_skeptical_prior = stan(model_code = skeptical_prior, data = c("K", "rm", "nm",'rc','nc'), pars = c("delta","deltanew",'tau'), iter = 500000, chains = 3)
+library(ggplot2)
 
-print(fit_skeptical_prior)
-skeptical_prior <- extract (fit_fit_skeptical_prior_prior, permuted=TRUE)
-hist(exp(skeptical_prior$deltanew), breaks=100)
-traceplot(fit_reference_prior, pars= "deltanew")
+##Fit skeptical prior and create plots
+fit_skeptical_prior = stan(model_code = skeptical_prior, data = c("K", "rm", "nm",'rc','nc'), pars = c("deltanew"), iter = 500000, chains = 3)
+skeptical_prior_return_vals <- extract(fit_skeptical_prior, permuted=TRUE)
+png(filename="./figures/skeptical_hist.png")
+hist(exp(skeptical_prior_return_vals$deltanew), breaks=50, xlab = expression(delta[new]), main=expression("Distribution of" ~ delta[new] ~ "under skeptical prior"))
+dev.off()
+png(filename="./figures/skeptical_trace.png")
+traceplot(fit_skeptical_prior, pars= "deltanew") + labs(y = expression(delta[new]), title = expression("Trace plot for" ~ delta[new] ~ "under skeptical prior"))
+dev.off()
 
+##Fit reference prior and create plots
+fit_reference_prior = stan(model_code = reference_prior, data = c("K", "rm", "nm",'rc','nc'), pars = c("deltanew"), iter = 500000, chains = 3)
+reference_prior_return_vals <- extract (fit_reference_prior, permuted=TRUE)
+png(filename="./figures/reference_hist.png")
+hist(exp(reference_prior_return_vals$deltanew), breaks=100, xlim =c(0,1.2),xlab = expression(delta[new]), main=expression("Distribution of" ~ delta[new] ~ "under reference prior"))
+dev.off()
+png(filename="./figures/reference_trace.png")
+traceplot(fit_reference_prior, pars= "deltanew") + labs(y = expression(delta[new]), title = expression("Trace plot for" ~ delta[new] ~ "under reference prior"))
+dev.off()

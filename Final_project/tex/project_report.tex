@@ -109,7 +109,7 @@ In contrast, in the Bayesian view the parameter is itself a random variable- the
 
 The problem of meta-analysis lends itself well to the Bayesian paradigm, since random-effects meta-analysis essentially matches the Bayesian perspective that there is in fact an underlying distribution on $\theta$. In a random-effects model, we no longer view $\theta$ as a fixed parameter- instead there is an underlying distribution on $\theta$ (which can be attributed to heterogeneity between studies). For further context, there are essentially two steps in data generating process governing this model \cite{Hedges}:
 \begin{enumerate}
-\item \textbf{Draw $\theta^i$ from the distribution on $\theta$}: Consider the $i^{th}$ study- choosing this study corresponds to drawing some effect size $\theta^i$ from the distribution on $\theta$.
+\item \textbf{Draw $\theta^i$ from the distribution on $\theta$}: Consider the $i^{\textrm{th}}$ study- choosing this study corresponds to drawing some effect size $\theta^i$ from the distribution on $\theta$.
 \item \textbf{Draw from the sampling distribution of $\hat{\theta}^i$}: Next, we estimate $\theta^i$ with our test statistic $\hat{\theta}^i$. This statistic is itself drawn from a sampling distribution, and as such is a random variable.
 \end{enumerate}
 Under this model, it is very natural to take a Bayesian perspective, placing a prior distribution on $\theta$ and then updating our prior based on available data (trial results).
@@ -145,7 +145,7 @@ We proceed to specify the frequentist fixed-effect and random-effects models use
 
 \subsection*{Frequentist fixed-effect models: Peto method}
 
-The Peto method is a method for fixed-effect modeling of binary data. The $i^{th}$ trial in our meta-analysis produces the data described in Table \ref{tab:sld}. 
+The Peto method is a method for fixed-effect modeling of binary data. The $i^{\textrm{th}}$ trial in our meta-analysis produces the data described in Table \ref{tab:sld}. 
 \bgroup
 \def\arraystretch{1.2}
 \begin{table}[H]
@@ -170,7 +170,7 @@ The number of deaths are assumed to be binomial: $r_i^M \sim \textrm{Binomial}(n
 Each trial produces estimates
 \[\hat{p}_i^M = r_i^M/n_i^M\]
 \[\hat{p}_i^C = r_i^C / n_i^C\]
-In addition, we can estimate the odds ratio $\psi = \frac{p^M (1- p^M)}{p^C (1 - p^C)}$ using the $i^{th}$ study:
+In addition, we can estimate the odds ratio $\psi = \frac{p^M (1- p^M)}{p^C (1 - p^C)}$ using the $i^{\textrm{th}}$ study:
 \[\hat{\psi}_i = \frac{\hat{p}_i^M(1-\hat{p}_i^M)}{\hat{p}_i^C(1-\hat{p}_i^C)}\]
 Unfortunately, this estimator fails when we have 0 counts for either deaths in the treatment or control group (as we do in our meta-analysis for the Bertschat trial). One approach to dealing with this issue is to add a continuity correction. Alternatively, we can instead use the Peto method, which does not required any such correction. The Peto estimate of the odds ratio is
 \[\hat{\psi}_i^* = \exp\left(\frac{r_i^M - \textrm{E}(r_i^K | \cdots; \psi = 1)}{\textrm{Var}(r_i^K | \cdots; \psi = 1)}\right)\]
@@ -190,7 +190,7 @@ From this point estimate and estimated variance, we can easily derive confidence
 
 \subsection*{Frequentist random-effects models: D-L method}
 
-Next, we introduce the DerSimonian-Laird method for random-effects modeling, following the treatment by Brockwell and Gordon \cite{BG}. First, recall under the general random-effects model the measured effect size $\theta_i$ for the $i^{th}$ trial in a collection of $K$ studies is:
+Next, we introduce the DerSimonian-Laird method for random-effects modeling, following the treatment by Brockwell and Gordon \cite{BG}. First, recall under the general random-effects model the measured effect size $\theta_i$ for the $i^{\textrm{th}}$ trial in a collection of $K$ studies is:
 \[\theta_i  = \theta + \epsilon_i + e_i\]
 where $e_i \sim N(0, \sigma_i^2)$ and $\epsilon_i \sim N(0, \tau^2)$ (i.e. $e_i$ is random sampling error and $\theta + \epsilon_i$ is trial $i$'s true effect size). Note we have yet to define the specific effect size measure- we will present the D-L method in the abstract, then return to this question. 
 
@@ -199,7 +199,7 @@ Similarly to the fixed-effect model, we use a weighted average to estimate $\the
 with variance
 \[\textrm{Var}(\hat{\theta}_\tau) = \frac{1}{\sum\hat{w}_i(\tau)}\]
 
-where $\hat{w}_i(\tau) = [\tau^2 + \hat{w}_i^{-1}]^{-1}$ and $\hat{w}_i$ is the estimated inverse variance of the $i^{th}$ studies effect size.
+where $\hat{w}_i(\tau) = [\tau^2 + \hat{w}_i^{-1}]^{-1}$ and $\hat{w}_i$ is the estimated inverse variance of the $i^{\textrm{th}}$ studies effect size.
 
 The challenge in random effects modeling is estimating the between-study variance $\tau^2$. A common approach is the DerSimonian and Laird method, which is a method of moments based estimator defined as 
 \[t = \frac{q_{\hat{w}} - (K - 1)}{\sum \hat{w}_i - \sum \hat{w}_i^2/ \sum \hat{w}_i}\]
@@ -250,11 +250,40 @@ Overall, the random-effects model is preferable, since it relaxes the (potential
 
 \section{Bayesian analysis}
 
-Given the preference for the random-effects model (which places a distribution on the effect size), Bayesian modeling offers an opportunity to incorporate our prior beliefs about the effect size distribution (and potentially improve our model). Thus, we now turn to learning two different random-effects meta-analysis models. Our first model will use the reference prior
-\[f_{\Delta}(\delta) \sim \textrm{N}(0, 10,000)\]
-and our second model will use the skeptical prior
-\[f_{\Delta}(\delta) \sim \textrm{N}(0, 0.03)\]
-Note the reference prior is approximately uniform (since it is normal with very large variance), and the skeptical prior, adopted from Higgins  and Spiegelhalter, is ``\emph{equivalent to a `trial' with 72 deaths in each group"} \cite{Original}.
+Given the preference for the random-effects model (which places a distribution on the effect size), Bayesian modeling offers an opportunity to incorporate our prior beliefs about the effect size distribution (and potentially improve our model). Thus, we now turn to learning two different random-effects meta-analysis models. Our first model will use the reference prior $\delta \sim \textrm{N}(0, 10,000)$, while our second model will use the skeptical prior $\delta \sim \textrm{N}(0, 0.03)$
+Note the reference prior is approximately uniform (since it is normal with very large variance), and the skeptical prior, adopted from Higgins and Spiegelhalter, is ``\emph{equivalent to a `trial' with 72 deaths in each group"} \cite{Original}.
+
+Except for the differing priors on $\delta$, the two models are otherwise the same. Specifically, the model (equivalent to method (i) from Higgins and Spiegelhalter \cite{Original}) is the Bayesian version of the Peto method. For the $i^{\textrm{th}}$ study, we estimate the log odds ratio $Y_i \approx \delta_i$, and compute the variance $1/V_i$ of our estimate ($Y_i$). Following \cite{Original}, we define these estimates as
+\begin{align*}
+O_i &= r_i^M \\
+E_i &= \frac{r_i^C + r_i^M}{n_i^C + n_i^M}n_i^M \\
+V_i &= \frac{n_i^Cn_i^M(r_i^C + r_i^M)(n_i^C + n_i^M - r_i^C - r_i^M)}{(n_i^C + n_i^M)^2(n_i^C + n_i^M-1)} \\
+Y_i &= \frac{O_i + E_i}{V_i} \sim \textrm{N}(\delta_i, 1/V_i)
+\end{align*}
+Next, with these estimates (and prior) in hand, our model is
+\begin{align*}
+\textrm{Reference prior on }\tau:&\qquad{} \textrm{Uniform}(0,100) \\
+\textrm{Distribution of }\delta_i:&\qquad{} \textrm{N}(\delta,\tau^2) \\
+\textrm{Distribution of }Y_i:&\qquad{} \textrm{N}(\delta_i,1/V_i)
+\end{align*}
+We find the posterior distributions for $\delta$ (for the sake of notation, going forward this will be referred to as the distribution of $\delta_{new}$) using 3 MCMC chains of 500,000 iterations each. First note convergence of the MCMC chains is apparent from the trace plots shown in figure \ref{fig:post_trace}. 
+\begin{center}
+\begin{figure}
+\includegraphics[scale=0.55]{./../figures/reference_trace.png}\\
+\includegraphics[scale=0.55]{./../figures/skeptical_trace.png}
+\caption{Trace plots illustrating convergence of the MCMC chains}
+\label{fig:post_trace}
+\end{figure}
+\end{center}
+\begin{center}
+\begin{figure}
+\includegraphics[scale=0.55]{./../figures/reference_hist.png}\\
+\includegraphics[scale=0.55]{./../figures/skeptical_hist.png}
+\caption{Histograms showing the posterior distributions of $\delta_{new}$ under skeptical and reference priors. Note the $x$-axis scales are unequal; the posterior distribution has lower variance under the skeptical prior than under the reference prior}
+\label{fig:post_hists}
+\end{figure}
+\end{center}
+Next, having (visually) shown the convergence of the MCMC chains, the posterior distributions are presented as histograms in figure \ref{fig:post_hists}.
 
 
 
