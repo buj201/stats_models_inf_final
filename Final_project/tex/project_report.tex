@@ -21,9 +21,10 @@
 %----------------------------------------------------------------------------------------
 
 \documentclass[fleqn,10pt]{SelfArx} % Document font size and equations flushed left
-\renewcommand{\baselinestretch}{1.05}
+\renewcommand{\baselinestretch}{1.1}
 \usepackage[english]{babel} % Specify a different language here - english by default
-
+\usepackage{float}
+\restylefloat{table}
 \usepackage{lipsum} % Required to insert dummy text. To be removed otherwise
 \usepackage{float}
 \usepackage{booktabs} %stretch tables
@@ -66,7 +67,7 @@
 %	ABSTRACT
 %----------------------------------------------------------------------------------------
 
-\Abstract{In 2002, Higgins and Spiegelhalter published a report comparing different meta-analyses of clinical trials testing the benefits of intravenous magnesium (Mg) following myocardial infarction (MI). This report essentially replicates their work using open-source statistical tools (R and RSTAN). First, we briefly introduce frequentist and Bayesian methods for meta-analysis and frame the substantive problem (meta-analytic inference on the log odds ratio for mortality with and without intravenous Mg following MI). Then we introduce and conduct the two frequentist analyses (using the Peto method and DerSimonian and Laird (D-L) method). Next, we run two Bayesian random effects models under two different priors. Finally, we compare the results from these different methods, and conclude by addressing the substantive question of the efficacy of Mg.}
+\Abstract{In 2002, Higgins and Spiegelhalter published a report comparing different meta-analyses of clinical trials testing the benefits of intravenous magnesium (Mg) following myocardial infarction (MI). This report essentially replicates their work using open-source statistical tools (R and RSTAN). First, we briefly introduce frequentist and Bayesian methods for meta-analysis and frame the substantive problem (meta-analytic inference on the log odds ratio for mortality with and without intravenous Mg following MI). Then we introduce and conduct the two frequentist analyses (using the Peto method and DerSimonian and Laird (D-L) method). Next, we run two Bayesian random effects models under two different priors. Finally, we compare the results from these different analyses, and conclude by addressing the substantive question of the efficacy of Mg.}
 
 %----------------------------------------------------------------------------------------
 
@@ -88,9 +89,9 @@
 
 \subsection*{Introducing meta-analysis}
 
-Meta-analysis is an important method for statistical inference motivated primarily by the need to combine the results of replication studies. For example, early clinical development requires investigating the efficacy of a candidate therapy on small numbers of patients. If early results are promising, the clinical trial may be replicated, and if there is continued evidence of clinically beneficial effect a large study may eventually be conducted. Regardless, if single candidate therapy is tested many times over many trials, there is a need for statistical methods to combine results across disparate studies. This is the domain of meta-analysis, defined by DerSimonian and Laird as ``\emph{the statistical analysis of a collection of analytic results for the purpose of integrating the findings}" \cite{DL}.
+Meta-analysis is an important method for statistical inference motivated primarily by the need to combine the results of replication studies. For example, early clinical development requires investigating the efficacy of a candidate therapy on small numbers of patients. If early results are promising, the clinical trial may be replicated, and if there is continued evidence of a clinically beneficial effect a large study may eventually be conducted. Since a single candidate therapy may be tested many times over many trials, there is a need for statistical methods to combine results across disparate studies. This is the domain of meta-analysis, defined by DerSimonian and Laird as ``\emph{the statistical analysis of a collection of analytic results for the purpose of integrating the findings}" \cite{DL}.
 
-For example, in a clinical context there is a need to estimate the overall effect size of a new therapy by integrating the effect sizes measured in each trial. A naive approach to estimating the overall effect size would be to take a simple mean of effect sizes from each study; however, this would clearly ignore information about the studies (for example, their sample sizes). The statistical field of meta-analysis involves (among other lines of inquiry) developing more principled methods for estimating the overall effect size from multiple studies.
+Returning to the example of researching a new clinical intervention, a naive approach to estimating the overall effect size would be to take a simple mean of effect sizes from each study; however, this would clearly ignore information about the studies (for example, their sample sizes). The statistical field of meta-analysis involves (among other lines of inquiry) developing more principled methods for estimating the overall effect size from multiple studies.
 
 When conducting a meta-analysis, it is important to consider many factors, including
 \begin{itemize}
@@ -193,8 +194,8 @@ Next, we introduce the DerSimonian-Laird method for random-effects modeling, fol
 \[\theta_i  = \theta + \epsilon_i + e_i\]
 where $e_i \sim N(0, \sigma_i^2)$ and $\epsilon_i \sim N(0, \tau^2)$ (i.e. $e_i$ is random sampling error and $\theta + \epsilon_i$ is trial $i$'s true effect size). Note we have yet to define the specific effect size measure- we will present the D-L method in the abstract, then return to this question. 
 
-Similarly to the fixed-effect model, we use a weighted average to estimate $\theta$, setting
-\[\hat{\theta}_\tau =  \frac{\sum_{i = 1}^K \hat{w}_i(\tau) Y_i }{\sum_{i = 1}^K \hat{w}_i(\tau)}\]
+Similarly to the fixed-effect model, we use a weighted average to estimate $\theta \approx \hat{\theta}_{\tau}$, setting
+\[\hat{\theta}_\tau =  \frac{\sum_{i = 1}^K \hat{w}_i(\tau) \hat{\theta}_i }{\sum_{i = 1}^K \hat{w}_i(\tau)}\]
 with variance
 \[\textrm{Var}(\hat{\theta}_\tau) = \frac{1}{\sum\hat{w}_i(\tau)}\]
 
@@ -202,14 +203,14 @@ where $\hat{w}_i(\tau) = [\tau^2 + \hat{w}_i^{-1}]^{-1}$ and $\hat{w}_i$ is the 
 
 The challenge in random effects modeling is estimating the between-study variance $\tau^2$. A common approach is the DerSimonian and Laird method, which is a method of moments based estimator defined as 
 \[t = \frac{q_{\hat{w}} - (K - 1)}{\sum \hat{w}_i - \sum \hat{w}_i^2/ \sum \hat{w}_i}\]
-Here, the only new term is $q_{\hat{w}}$, which is the observed value of Cochran's Q heterogeneity statistic\footnote{Note this is what makes D-L a method of moments based estimator, as we are plugging in the observed value of this statistic for its expectation in our estimator for $\tau^2$.}\cite{HTDA}:
+Here, the only new term is $q_{\hat{w}}$, which is the observed value of Cochran's Q heterogeneity statistic\footnote{Note this is what makes D-L a method of moments based estimator, as we are plugging in the observed value of the $Q$ statistic for its expectation in our estimator for $\tau^2$.}\cite{HTDA}:
 \[q_{\hat{w}} = \sum_{i = 1}^K w_i (\hat{\theta}_i - \bar{\theta}_{weighted})^2\]
 Since $t$ can be negative, we define our final estimator as
 \[\hat{\tau}^2 = \max \{0, t\}\]
 
 Finally, having computed this estimate for $\tau^2$, we plug it into our weights, our estimator for $\theta$, and its variance estimate:
 \[\hat{w}_i({\hat{\tau}}) = [\hat{\tau}^2 + \hat{w}_i^{-1}]^{-1}\]
-\[\hat{\theta}_{\hat{\tau}} =  \frac{\sum_{i = 1}^K \hat{w}_i(\hat{\tau}) Y_i }{\sum_{i = 1}^K \hat{w}_i(\hat{\tau})}\]
+\[\hat{\theta}_{\hat{\tau}} =  \frac{\sum_{i = 1}^K \hat{w}_i(\hat{\tau})  \hat{\theta}_i }{\sum_{i = 1}^K \hat{w}_i(\hat{\tau})}\]
 \[\textrm{Var}(\hat{\theta}_{\hat{\tau}}) = \frac{1}{\sum\hat{w}_i(\hat{\tau})}\]
 
 Now all that is left is returning to the effect size estimator $\hat{\theta}_i$. For example, we can the Peto method described above, and doing so fixes our definition of $\theta_i, \bar{\theta_i}$, and $w_i$\cite{Methods}:
@@ -220,13 +221,40 @@ Now all that is left is returning to the effect size estimator $\hat{\theta}_i$.
 %------------------------------------------------
 
 \section{Frequentist analysis}
-
-We proceed by fitting the fixed-effect (Peto method) and random-effects (D-L method) models to the magnesium trials data. A summary is presented in Table 2.
 \input{table2.tex}
+We proceed by fitting the fixed-effect (Peto method) and random-effects (D-L method) models to the magnesium trials data. First, we present forest plots for each of the fixed effects models in figure 1. These plots include each trials' individual odds ratio estimate (with a confidence interval), the weight assigned to each trial in the fixed-effects model, plus the final fixed-effects odds ratio estimate and confidence interval.
+\begin{center}
+\begin{figure}
+\includegraphics[scale=0.45]{./../figures/forest_early.png}
+\\
+\includegraphics[scale=0.45]{./../figures/forest_middle.png}
+\\
+\includegraphics[scale=0.45]{./../figures/forest_late.png}
+\label{fig:forests}
+\caption{Forest plots showing the fixed-effect meta-analytic odds ratios for each trial set, plus the model weights assigned to each trial}
+\end{figure}
+\end{center}
+Prior to interpreting the results shown in figure and table 2, recall:
+\begin{itemize}
+\item Odds ratios less than one indicate a beneficial effect (specifically, relatively lower odds of death for patients receiving magnesium following myocardial infarction than for patients receiving the control treatment).
+\item Odds ratios higher than one indicate a harmful effect (specifically, relatively higher odds of death for patients receiving magnesium following myocardial infarction than for patients receiving the control treatment).
+\end{itemize}
+
+Now consider the forest plots shown in figure 1. First, note the fixed-effects model (fit using the Peto Method) was dominated by the trials with the largest sample sizes. For example, in the model fit using the first eight studies, the LIMIT-2 study received 72.47\% of the weight in the fixed-effects model. In the all-studies model, the ISIS-4 study received 92.44\% of the weight. This weighting causes the fixed-effects model odds ratio (OR) to change dramatically with the inclusion of the ISIS-4 trial in the trial set. Prior to the inclusion of the ISIS-4 model, the 14 study OR was 0.58 (with a 95\% CI of [0.46,0.71]). This indicates the odds of death for patients given magnesium following myocardial infarction was estimated to be 0.57 times the odds of death for control patients. This is clearly a dramatic effect (and one that would be extremely beneficial given the high prevalence of MI across the population). However, when the ISIS-4 trials is included, the fixed-effects OR estimate is 1.01 (with a 95\% CI of [0.0.95,1.07]). This indicates the absence of a statistically (or clinically) significant difference in the odds of death for patients in the treatment versus control groups.
+
+In addition to the forest plots, a summary is presented in table \ref{tab:Table2}.  To interpret this table, we compare the estimated odds ratios and confidence intervals obtained for the fixed-effect and random-effects models. The primary observation is the insensitivity of the random-effects model to the ISIS-4 megastudy (relative to the fixed-effects model). This is expected, since random-effects model weights are less sensitive to sample size than fixed-effects model weights. As such, using the DerSimonian-Laird method, all the random-effects odd ratio estimates are significantly different than 1, and indicate a positive effect of Mg on death from complications due to myocardial infarction; for example, our final random-effects model (including ISIS-4) odds ratio estimate is 0.53 (95\% CI: [0.36, 0.77]), indicating patients receiving Mg have a 0.53 times odds of death compared to patients in the control group.
+
+Overall, the random-effects model is preferable, since it relaxes the (potentially unfounded) assumption that the effect size is fixed across all trials. Note this assumption seems unfounded, especially given differences in study protocols (as noted in Higgins and Spiegelhalter's summary of criticims of the ISIS-4 megatrial) \cite{Original}. As such, the random-effects models seems to be a more accurate reflection of the underlying data generating process, and is preferable.
 
 %------------------------------------------------
 
 \section{Bayesian analysis}
+
+Given the preference for the random-effects model (which places a distribution on the effect size), Bayesian modeling offers an opportunity to incorporate our prior beliefs about the effect size distribution (and potentially improve our model). Thus, we now turn to learning two different random-effects meta-analysis models. Our first model will use the reference prior
+\[f_{\Theta}(\theta) \sim \textrm{N}(0, 10,000)\]
+and our second model will use the skeptical prior
+\[f_{\Theta}(\theta) \sim \textrm{N}(0, 0.03)\]
+Note the reference prior is approximately uniform (since it is normal with very large variance), and the skeptical prior, adopted from Higgins  and Spiegelhalter, is ``\emph{equivalent to a `trial' with 72 deaths in each group"} \cite{Origin}.
 
 %------------------------------------------------
 

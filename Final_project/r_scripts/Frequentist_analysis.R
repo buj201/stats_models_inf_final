@@ -20,7 +20,9 @@ peto_analysis = function(list_of_studies, MgMI_data){
   ci = target_data$dead0
   di = target_data$tot0 - target_data$dead0
   n2i = target_data$tot0
-  return(rma.peto(ai,bi,ci,di,n1i,n2i, 1, to='none'))
+  target_data[, c('trialnam')] = sapply(target_data[, c('trialnam')], as.character)
+  slab = target_data$trialnam
+  return(rma.peto(ai,bi,ci,di,n1i,n2i, slab = slab, 1, to='none'))
 }
 
 ###DL analysis function
@@ -79,7 +81,7 @@ text_identity = function(x){
   return(x)
 }
 
-table = print(xtable(firstdf), include.rownames = FALSE, comment=FALSE, sanitize.text.function = text_identity, table.placement = 'b')
+table = print(xtable(firstdf), include.rownames = FALSE, comment=FALSE, sanitize.text.function = text_identity, table.placement = 'htbp')
 table = gsub("\\end{tabular}\n\\end{table}\n","",table,  fixed = TRUE)
 table = paste(table, make_peto_string(early_studies, MgMI))
 table = paste(table, make_DL_string(early_studies, MgMI))
@@ -96,3 +98,23 @@ fileConn = file("tex/table2.tex")
 writeLines(table, fileConn)
 close(fileConn)
 
+###Make forest plots
+
+par(cex=0.92)
+png(filename="./figures/forest_early.png")
+forest(peto_analysis(early_studies, MgMI), showweights = TRUE, transf=exp)
+grid.text("Forest Plot for First Eight Studies", .5, .85, gp=gpar(cex=2))
+grid.text("Study Name                                         Study Weight   Odds Ratio (CI)", .5, .79, gp=gpar(cex=1.2))
+dev.off()
+
+png(filename="./figures/forest_middle.png")
+forest(peto_analysis(c(early_studies,middle_studies), MgMI), showweights = TRUE,transf=exp)
+grid.text("Forest Plot for First 14 Studies", .5, .9, gp=gpar(cex=2))
+grid.text("Study Name                                         Study Weight   Odds Ratio (CI)", .5, .84, gp=gpar(cex=1.2))
+dev.off()
+
+png(filename="./figures/forest_late.png")
+forest(peto_analysis(c(early_studies,middle_studies,late_study), MgMI), showweights = TRUE,transf=exp)
+grid.text("Forest Plot for All Studies", .5, .9, gp=gpar(cex=2))
+grid.text("Study Name                                          Study Weight   Odds Ratio (CI)", .5, .84, gp=gpar(cex=1.2))
+dev.off()
