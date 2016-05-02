@@ -118,3 +118,97 @@ forest(peto_analysis(c(early_studies,middle_studies,late_study), MgMI), showweig
 grid.text("Forest Plot for All Studies", .5, .9, gp=gpar(cex=2))
 grid.text("Study Name                                          Study Weight   Odds Ratio (CI)", .5, .84, gp=gpar(cex=1.2))
 dev.off()
+
+###Bayesian Modeling
+
+library(rstan)
+
+K = nrow(MgMI)
+rc = MgMI$dead0
+nc = MgMI$tot0
+rm = MgMI$dead1
+nm = MgMI$tot1
+
+
+reference_prior = "data {
+int<lower=0> K; 			// # trials
+real<lower=0> rm[K]; 					// number of treatment deaths
+real<lower=0> nm[K]; 					// total number of treatment patients
+real<lower=0> rc[K]; 	// number of control deaths
+real<lower=0> nc[K]; 	// total number of control deaths
+}
+
+transformed data {
+real<lower=0> E[K];        // Expected number of treatment deaths
+real<lower=0> v[K];                 // Variance of estimate in Peto method
+real y[K];                 // Peto effect size estimate
+real w[K];                 // Inverse variance of estimate in Peto method
+for (n in 1:K){
+  E[n] <- (rc[n] + rm[n])/(nc[n] + nm[n]) * nm[n];
+  v[n] <- (nc[n]*nm[n]*(rc[n]+rm[n])*(nc[n] + nm[n] - rc[n] -rm[n]))/((nc[n]+nm[n])^2*(nc[n] + nm[n] -1));
+  y[n] <- (rm[n] - E[n])/v[n];
+  w[n] <- sqrt(1/v[n]); // Recall the normal dist in STAN takes sd as param
+  }
+}
+
+parameters{
+real delta[K];    // Trial-level effect size
+real deltanew;          // Average effect size
+real<lower=0> tau;         // SD of effect size distribution
+}
+
+model { 
+//place priors
+deltanew ~ normal(0, 100);   // reference prior on deltanew with sd = 100
+tau ~ uniform(0,100); // reference prior on tau with sd = 100
+
+//Modeling the data generating process
+delta ~ normal(deltanew, tau);     //draw true effect size for each trial (implicit _K)
+y ~ normal(delta, w);        //draw a measured effect size with noise
+}"
+
+skeptical_prior = "data {
+int<lower=0> K; 			// # trials
+real<lower=0> rm[K]; 					// number of treatment deaths
+real<lower=0> nm[K]; 					// total number of treatment patients
+real<lower=0> rc[K]; 	// number of control deaths
+real<lower=0> nc[K]; 	// total number of control deaths
+}
+
+transformed data {
+real<lower=0> E[K];        // Expected number of treatment deaths
+real<lower=0> v[K];                 // Variance of estimate in Peto method
+real y[K];                 // Peto effect size estimate
+real w[K];                 // Inverse variance of estimate in Peto method
+for (n in 1:K){
+E[n] <- (rc[n] + rm[n])/(nc[n] + nm[n]) * nm[n];
+v[n] <- (nc[n]*nm[n]*(rc[n]+rm[n])*(nc[n] + nm[n] - rc[n] -rm[n]))/((nc[n]+nm[n])^2*(nc[n] + nm[n] -1));
+y[n] <- (rm[n] - E[n])/v[n];
+w[n] <- sqrt(1/v[n]); // Recall the normal dist in STAN takes sd as param
+}
+}
+
+parameters{
+real delta[K];    // Trial-level effect size
+real deltanew;          // Average effect size
+real<lower=0> tau;         // SD of effect size distribution
+}
+
+model { 
+//place priors
+deltanew ~ normal(0, 0.03);   // skeptical prior on deltanew with sd = 0.03
+tau ~ uniform(0,100); // reference prior on tau with sd = 100
+
+//Modeling the data generating process
+delta ~ normal(deltanew, tau);     //draw true effect size for each trial (implicit _K)
+y ~ normal(delta, w);        //draw a measured effect size with noise
+}"
+
+# Just to check
+fit_skeptical_prior = stan(model_code = skeptical_prior, data = c("K", "rm", "nm",'rc','nc'), pars = c("delta","deltanew",'tau'), iter = 500000, chains = 3)
+
+print(fit_skeptical_prior)
+skeptical_prior <- extract (fit_fit_skeptical_prior_prior, permuted=TRUE)
+hist(exp(skeptical_prior$deltanew), breaks=100)
+traceplot(fit_reference_prior, pars= "deltanew")
+
